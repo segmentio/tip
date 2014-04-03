@@ -9,8 +9,10 @@ var query = require('query');
 var domify = require('domify');
 var classes = require('classes');
 var css = require('css');
-var html = domify(require('./template'));
+var html = domify(require('./template.html'));
 var offset = require('offset');
+var raf = require('raf');
+var after = require('after-transition');
 
 /**
  * Expose `Tip`.
@@ -196,13 +198,17 @@ Tip.prototype.position = function(pos, options){
  */
 
 Tip.prototype.show = function(el){
+  var self = this;
   if ('string' == typeof el) el = query(el);
 
   // show it
   this.target = el;
   document.body.appendChild(this.el);
   this.classes.add('tip-' + this._position.replace(/\s+/g, '-'));
-  this.classes.remove('tip-hide');
+
+  raf(function(){
+    self.classes.remove('tip-hide');
+  });
 
   // x,y
   if ('number' == typeof el) {
@@ -218,6 +224,7 @@ Tip.prototype.show = function(el){
 
   // el
   this.reposition();
+  this.el.offsetHeight;
   this.emit('show', this.target);
 
   this.winEvents.bind('resize', 'reposition');
@@ -283,10 +290,9 @@ Tip.prototype.suggested = function(pos, off){
  */
 
 Tip.prototype.replaceClass = function(name){
-  name = name.split(' ').join('-');
-  var classname = this.classname + ' tip tip-' + name;
-  if (this._effect) classname += ' ' + this._effect;
-  this.el.setAttribute('class', classname);
+  this.classes
+    .remove('tip-' + this._position.split(' ').join('-'))
+    .add('tip-' + name.split(' ').join('-'));
 };
 
 /**
@@ -386,12 +392,12 @@ Tip.prototype.hide = function(ms){
   }
 
   // hide
-  this.classes.add('tip-hide');
-  if (this._effect) {
-    setTimeout(bind(this, this.remove), 300);
-  } else {
-    self.remove();
-  }
+  raf(function(){
+    after.once(self.el, function(){
+      self.remove();
+    });
+    self.classes.add('tip-hide');
+  });
 
   return this;
 };
