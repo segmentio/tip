@@ -412,6 +412,8 @@ Tip.prototype.hide = function(ms){
 Tip.prototype.remove = function(){
   this.winEvents.unbind('resize', 'reposition');
   this.winEvents.unbind('scroll', 'reposition');
+  this.handleEvents.unbind('mouseover');
+  this.handleEvents.unbind('mouseout');
   this.emit('hide');
 
   var parent = this.el.parentNode;
